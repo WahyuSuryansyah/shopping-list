@@ -14,8 +14,12 @@ from django.contrib.auth.decorators import login_required
 import datetime
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import logout as auth_logout
 
+
+from django.views.decorators.csrf import csrf_exempt
+import json
+from django.http import  JsonResponse
 
 @login_required(login_url='/login')
 def show_main(request):
@@ -143,3 +147,39 @@ def add_product_ajax(request):
     return HttpResponseNotFound()
 
 # Create your views here.
+
+@csrf_exempt
+def create_product_flutter(request):
+    if request.method == 'POST':
+        
+        data = json.loads(request.body)
+
+        new_product = Product.objects.create(
+            user = request.user,
+            name = data["name"],
+            price = int(data["price"]),
+            description = data["description"]
+        )
+
+        new_product.save()
+
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
+    
+@csrf_exempt
+def logout(request):
+    username = request.user.username
+
+    try:
+        auth_logout(request)
+        return JsonResponse({
+            "username": username,
+            "status": True,
+            "message": "Logout berhasil!"
+        }, status=200)
+    except:
+        return JsonResponse({
+        "status": False,
+        "message": "Logout gagal."
+        }, status=401)
